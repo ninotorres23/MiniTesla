@@ -1,0 +1,110 @@
+@startuml MiniTesla Class Diagram
+
+' Styling
+skinparam classAttributeIconSize 0
+skinparam packageStyle rect
+
+' --- Core Package ---
+package com.nino.robotics.core {
+    interface RobotController {
+        + updateControl(car: RobotCar, delta: float)
+    }
+
+    abstract class Sensor {
+        # value: float
+        # relativePosition: Vector2
+        + update(car: RobotCar, worldMap: WorldMap, delta: float)
+        + readValue(): float
+    }
+
+    class LineSensor extends Sensor {}
+    class UltrasonicSensor extends Sensor {}
+
+    class Motor {
+        - speed: float
+        + setSpeed(speed: float)
+        + getSpeed(): float
+    }
+
+    class RobotCar {
+        - x: float
+        - y: float
+        - angle: float
+        - leftMotor: Motor
+        - rightMotor: Motor
+        - sensors: List<Sensor>
+        + update(delta: float, worldMap: WorldMap)
+        + setMotorSpeeds(left: float, right: float)
+    }
+
+    RobotCar o-- "2" Motor
+    RobotCar *-- "*" Sensor
+}
+
+' --- AI and Input Packages (Controllers) ---
+package com.nino.robotics.ai {
+    class AutonomousNavigator implements RobotController {
+        - currentState: State
+        + updateControl(car: RobotCar, delta: float)
+    }
+
+    class ObstacleAvoidanceSystem {
+        - worldMap: WorldMap
+        + isCollisionImminent(car: RobotCar): boolean
+    }
+    AutonomousNavigator ..> ObstacleAvoidanceSystem : uses
+}
+
+package com.nino.robotics.input {
+    class ManualController implements RobotController {
+        - avoidanceSystem: ObstacleAvoidanceSystem
+        + updateControl(car: RobotCar, delta: float)
+    }
+    ManualController ..> ObstacleAvoidanceSystem : uses
+}
+
+' --- Simulation Package (View) ---
+package com.nino.robotics.simulation {
+    class SimulationGame extends com.badlogic.gdx.Game {
+        + create()
+    }
+
+    class SimulationScreen implements com.badlogic.gdx.Screen {
+        - shapeRenderer: ShapeRenderer
+        - robotCar: RobotCar
+        - worldMap: WorldMap
+        - activeController: RobotController
+        + render(delta: float)
+    }
+
+    class WorldMap {
+        - linePath: LinePath
+        - obstacles: List<Obstacle>
+        + isOnLine(x: float, y: float): boolean
+    }
+
+    class Obstacle {
+        - bounds: Rectangle
+    }
+
+    class LinePath {
+        - points: List<Vector2>
+    }
+
+    SimulationGame --> SimulationScreen : creates
+    SimulationScreen o-- RobotCar
+    SimulationScreen o-- WorldMap
+    SimulationScreen ..> RobotController : uses
+    WorldMap *-- "*" Obstacle
+    WorldMap o-- LinePath
+}
+
+' --- Relationships between packages ---
+SimulationScreen --> AutonomousNavigator : creates
+SimulationScreen --> ManualController : creates
+AutonomousNavigator ..> RobotCar : controls
+ManualController ..> RobotCar : controls
+Sensor ..> WorldMap : reads from
+RobotCar ..> WorldMap : interacts with
+
+@enduml

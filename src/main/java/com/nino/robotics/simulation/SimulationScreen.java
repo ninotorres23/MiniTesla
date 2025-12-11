@@ -34,7 +34,7 @@ public class SimulationScreen implements Screen {
         sideCamera = new SideCamera();
 
         worldMap = new WorldMap();
-        robotCar = new RobotCar(1.0f, 1.5f);
+        robotCar = new RobotCar(1.0f, 1.2f); // Start centered on line (X=1.0) and near beginning (Y=1.2)
 
         ObstacleAvoidanceSystem obstacleAvoidanceSystem = new ObstacleAvoidanceSystem(worldMap);
         autonomousNavigator = new AutonomousNavigator();

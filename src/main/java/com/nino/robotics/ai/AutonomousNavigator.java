@@ -15,14 +15,14 @@ public class AutonomousNavigator implements RobotController {
     
     // PD Controller Configuration
     private static final float BASE_SPEED = 0.3f;
-    private static final float KP = 0.8f;  // Proportional gain
-    private static final float KD = 0.2f;  // Derivative gain
+    private static final float KP = 0.6f;  // Reduced gain for smoother control
+    private static final float KD = 0.6f;  // Keep high damping
     private static final float LINE_THRESHOLD = 0.3f;  // Sensor detection threshold
     
     // Corner detection
     private static final float CORNER_DETECT_TIME = 0.08f;  // Time (seconds) to confirm corner
-    private static final float POST_CORNER_HOLD_TIME = 0.6f; // Time to hold straight after corner
-    private static final float CORNER_FORWARD_SPEED = 0.15f; // Speed during corner reacquisition
+    private static final float POST_CORNER_HOLD_TIME = 0.5f; // Reduced hold time to resume control faster
+    private static final float CORNER_FORWARD_SPEED = 0.3f; // Full speed during reacquisition to prevent stalling
     private static final float CORNER_REACQUIRE_TIMEOUT = 2.0f; // Max time to reacquire before giving up
     private static final float END_OF_LINE_TIME = 0.3f; // Time with no line before stopping (end of track)
     
@@ -74,35 +74,35 @@ public class AutonomousNavigator implements RobotController {
         }
         
         // === CORNER REACQUISITION MODE ===
-        // After snapping heading, drive forward until mid sensor finds the line
+        // After snapping heading, drive forward until ANY sensor finds the line
         if (inCornerReacquire) {
             cornerReacquireTimer += delta;
             
-            if (mid > LINE_THRESHOLD) {
-                // Mid sensor found the line - exit corner mode
+            // Check if ANY sensor sees the line
+            if (mid > LINE_THRESHOLD || left > LINE_THRESHOLD || right > LINE_THRESHOLD) {
+                // Sensor found the line - exit corner mode
                 inCornerReacquire = false;
                 postCornerHoldTimer = POST_CORNER_HOLD_TIME;
                 cornerDirection = 0;
                 cornerReacquireTimer = 0;
                 lastError = 0;  // Reset PD state
                 car.setMotorSpeeds(BASE_SPEED, BASE_SPEED);
-                System.out.println("CORNER: mid reacquired -> resuming PD control");
+                System.out.println("CORNER: line reacquired -> resuming PD control");
                 return;
             }
             
-            // Timeout - stop if we can't find the line
+            // Timeout - give up and try to resume normal control
             if (cornerReacquireTimer > CORNER_REACQUIRE_TIMEOUT) {
                 inCornerReacquire = false;
                 cornerReacquireTimer = 0;
-                car.setMotorSpeeds(0, 0);
-                System.out.println("CORNER: TIMEOUT - could not reacquire line, stopping");
+                System.out.println("CORNER: TIMEOUT - resuming normal control");
+                // Don't return, let it fall through to normal control
+            } else {
+                // Keep driving forward to find the line
+                car.setMotorSpeeds(CORNER_FORWARD_SPEED, CORNER_FORWARD_SPEED);
+                System.out.println(String.format("CORNER: driving forward to reacquire... (%.2fs)", cornerReacquireTimer));
                 return;
             }
-            
-            // Keep driving forward slowly to find the line
-            car.setMotorSpeeds(CORNER_FORWARD_SPEED, CORNER_FORWARD_SPEED);
-            System.out.println(String.format("CORNER: driving forward to reacquire... (%.2fs)", cornerReacquireTimer));
-            return;
         }
         
         // === POST-CORNER HOLD ===
@@ -158,16 +158,33 @@ public class AutonomousNavigator implements RobotController {
             cornerDetectSide = 0;
         }
         
-        // === NORMAL PD CONTROL ===
+        // === SMOOTH STEERING LOGIC ===
         float error = 0;
-        float PDtotal = left + mid + right;
         
-        if (PDtotal > 0.1f) {
-            // Calculate weighted position error
-            error = (-left + right) / PDtotal;
+        if (mid > LINE_THRESHOLD) {
+            // FINE CONTROL ZONE: Middle sensor is safe. Be gentle.
+            if (left > LINE_THRESHOLD) {
+                // Slightly left of center -> Gentle nudge LEFT (Positive error)
+                error = 0.3f; 
+            } else if (right > LINE_THRESHOLD) {
+                // Slightly right of center -> Gentle nudge RIGHT (Negative error)
+                error = -0.3f;
+            } else {
+                // Perfectly centered -> Drive straight
+                error = 0.0f;
+            }
         } else {
-            // Line lost - use last error direction
-            error = (lastError > 0) ? 1.0f : -1.0f;
+            // COARSE CONTROL ZONE: Middle sensor lost. We are drifting!
+            if (left > LINE_THRESHOLD) {
+                // Hard turn LEFT (Positive error)
+                error = 1.0f;
+            } else if (right > LINE_THRESHOLD) {
+                // Hard turn RIGHT (Negative error)
+                error = -1.0f;
+            } else {
+                // All sensors lost - use last known direction
+                error = (lastError > 0) ? 1.0f : -1.0f;
+            }
         }
         
         // PD control

@@ -29,7 +29,10 @@ public class RobotCar {
         this.leftLineSensor = new LineSensor(-Config.LINE_SENSOR_SIDE_OFFSET, Config.LINE_SENSOR_FORWARD_OFFSET);
         this.midLineSensor = new LineSensor(0, Config.LINE_SENSOR_FORWARD_OFFSET);
         this.rightLineSensor = new LineSensor(Config.LINE_SENSOR_SIDE_OFFSET, Config.LINE_SENSOR_FORWARD_OFFSET);
-        this.ultrasonicSensor = new UltrasonicSensor(0, Config.ULTRASONIC_SENSOR_FORWARD_OFFSET);
+        
+        // Fix: Place ultrasonic sensor on X-axis (forward motion axis) instead of Y-axis
+        // This puts it at the front center of the car relative to its movement
+        this.ultrasonicSensor = new UltrasonicSensor(Config.ULTRASONIC_SENSOR_FORWARD_OFFSET, 0);
 
         sensors.add(leftLineSensor);
         sensors.add(midLineSensor);

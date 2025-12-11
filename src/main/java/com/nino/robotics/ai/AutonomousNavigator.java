@@ -38,22 +38,8 @@ public class AutonomousNavigator implements RobotController {
 
     @Override
     public void updateControl(RobotCar car, float delta) {
-        float ultrasonicDist = car.getUltrasonicSensor().readValue();
-
-        if (ultrasonicDist < Config.ULTRASONIC_STOP_DISTANCE) {
-            currentState = State.OBSTACLE_AVOIDANCE;
-        } else {
-            currentState = State.LINE_FOLLOWING;
-        }
-
-        switch (currentState) {
-            case LINE_FOLLOWING:
-                followLine(car, delta);
-                break;
-            case OBSTACLE_AVOIDANCE:
-                avoidObstacle(car);
-                break;
-        }
+        // Ultrasonic disabled in autonomous mode - only line following
+        followLine(car, delta);
     }
 
     private void followLine(RobotCar car, float delta) {

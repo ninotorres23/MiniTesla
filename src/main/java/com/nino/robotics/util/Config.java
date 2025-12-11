@@ -24,9 +24,9 @@ public class Config {
     public static final float ULTRASONIC_SENSOR_FORWARD_OFFSET = 0.2f;
 
     // Ultrasonic Sensor properties
-    public static final float ULTRASONIC_MAX_DISTANCE = 3.0f; // meters
+    public static final float ULTRASONIC_MAX_DISTANCE = 4.0f; // meters (max detection range)
     public static final float ULTRASONIC_CONE_ANGLE = 30.0f; // degrees
-    public static final float ULTRASONIC_STOP_DISTANCE = 0.5f; // meters
+    public static final float ULTRASONIC_STOP_DISTANCE = 0.4f; // meters (~40 pixels) - stop safely before contact
 
     // Line properties
     public static final float LINE_THICKNESS = 0.1f; // meters

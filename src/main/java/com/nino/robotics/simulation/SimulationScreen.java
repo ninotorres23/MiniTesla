@@ -118,13 +118,32 @@ public class SimulationScreen implements Screen {
             shapeRenderer.circle(sensorPos.x, sensorPos.y, 0.02f);
         }
 
-        // Draw ultrasonic ray (only in manual mode)
+        // Draw ultrasonic cone (only in manual mode, with transparency)
         if (activeController == manualController) {
-            shapeRenderer.setColor(new Color(0, 1, 1, 1));  // Opaque cyan
+            // Enable blending for transparency
+            Gdx.gl.glEnable(GL20.GL_BLEND);
+            Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+            
             Vector2 ultrasonicSensorPos = robotCar.localToWorld(robotCar.getUltrasonicSensor().getRelativePosition());
             float dist = robotCar.getUltrasonicSensor().readValue();
             float angleRad = (float) Math.toRadians(robotCar.getAngle());
-            shapeRenderer.line(ultrasonicSensorPos.x, ultrasonicSensorPos.y, ultrasonicSensorPos.x + dist * (float)Math.cos(angleRad), ultrasonicSensorPos.y + dist * (float)Math.sin(angleRad));
+            float halfConeRad = (float) Math.toRadians(Config.ULTRASONIC_CONE_ANGLE / 2);
+            
+            // Draw cone as a triangle with transparency
+            shapeRenderer.setColor(new Color(0, 1, 1, 0.3f));  // Transparent cyan
+            float leftAngle = angleRad + halfConeRad;
+            float rightAngle = angleRad - halfConeRad;
+            float endLeftX = ultrasonicSensorPos.x + dist * (float)Math.cos(leftAngle);
+            float endLeftY = ultrasonicSensorPos.y + dist * (float)Math.sin(leftAngle);
+            float endRightX = ultrasonicSensorPos.x + dist * (float)Math.cos(rightAngle);
+            float endRightY = ultrasonicSensorPos.y + dist * (float)Math.sin(rightAngle);
+            shapeRenderer.triangle(ultrasonicSensorPos.x, ultrasonicSensorPos.y, endLeftX, endLeftY, endRightX, endRightY);
+            
+            // Draw center ray line (more visible)
+            shapeRenderer.setColor(new Color(0, 1, 1, 0.7f));  // Semi-transparent cyan
+            float endX = ultrasonicSensorPos.x + dist * (float)Math.cos(angleRad);
+            float endY = ultrasonicSensorPos.y + dist * (float)Math.sin(angleRad);
+            shapeRenderer.rectLine(ultrasonicSensorPos.x, ultrasonicSensorPos.y, endX, endY, 0.02f);
         }
     }
 
@@ -149,6 +168,28 @@ public class SimulationScreen implements Screen {
                 shapeRenderer.rect(obstacle.getBounds().x, 0.1f, obstacle.getBounds().width, 0.5f);
             }
         }
+        
+        // Draw ultrasonic beam in side view (only in manual mode)
+        if (activeController == manualController) {
+            Gdx.gl.glEnable(GL20.GL_BLEND);
+            Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+            
+            float dist = robotCar.getUltrasonicSensor().readValue();
+            float carX = robotCar.getX();
+            float angleRad = (float) Math.toRadians(robotCar.getAngle());
+            
+            // Calculate beam end position in X (side view shows X axis)
+            float beamEndX = carX + dist * (float)Math.cos(angleRad);
+            
+            // Draw beam as a transparent rectangle
+            shapeRenderer.setColor(new Color(0, 1, 1, 0.4f));  // Transparent cyan
+            float beamStartX = Math.min(carX, beamEndX);
+            float beamWidth = Math.abs(beamEndX - carX);
+            if (beamWidth > 0.01f) {  // Only draw if there's meaningful width
+                shapeRenderer.rect(beamStartX, 0.15f, beamWidth, 0.1f);
+            }
+        }
+        
         shapeRenderer.end();
     }
 

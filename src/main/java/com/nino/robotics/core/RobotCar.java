@@ -90,6 +90,7 @@ public class RobotCar {
     public float getX() { return x; }
     public float getY() { return y; }
     public float getAngle() { return angle; }
+    public void setAngle(float angle) { this.angle = angle; }
     public List<Sensor> getSensors() { return sensors; }
     public LineSensor getLeftLineSensor() { return leftLineSensor; }
     public LineSensor getMidLineSensor() { return midLineSensor; }

@@ -118,12 +118,14 @@ public class SimulationScreen implements Screen {
             shapeRenderer.circle(sensorPos.x, sensorPos.y, 0.02f);
         }
 
-        // Draw ultrasonic ray
-        shapeRenderer.setColor(Color.CYAN);
-        Vector2 ultrasonicSensorPos = robotCar.localToWorld(robotCar.getUltrasonicSensor().getRelativePosition());
-        float dist = robotCar.getUltrasonicSensor().readValue();
-        float angleRad = (float) Math.toRadians(robotCar.getAngle());
-        shapeRenderer.line(ultrasonicSensorPos.x, ultrasonicSensorPos.y, ultrasonicSensorPos.x + dist * (float)Math.cos(angleRad), ultrasonicSensorPos.y + dist * (float)Math.sin(angleRad));
+        // Draw ultrasonic ray (only in manual mode)
+        if (activeController == manualController) {
+            shapeRenderer.setColor(new Color(0, 1, 1, 1));  // Opaque cyan
+            Vector2 ultrasonicSensorPos = robotCar.localToWorld(robotCar.getUltrasonicSensor().getRelativePosition());
+            float dist = robotCar.getUltrasonicSensor().readValue();
+            float angleRad = (float) Math.toRadians(robotCar.getAngle());
+            shapeRenderer.line(ultrasonicSensorPos.x, ultrasonicSensorPos.y, ultrasonicSensorPos.x + dist * (float)Math.cos(angleRad), ultrasonicSensorPos.y + dist * (float)Math.sin(angleRad));
+        }
     }
 
     private void renderSideView() {

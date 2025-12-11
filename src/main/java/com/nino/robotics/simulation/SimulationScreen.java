@@ -7,7 +7,7 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
-import com.nino.robotics.ai.temp1;
+import com.nino.robotics.ai.AutonomousNavigator;
 import com.nino.robotics.ai.ObstacleAvoidanceSystem;
 import com.nino.robotics.core.RobotCar;
 import com.nino.robotics.core.RobotController;
@@ -25,7 +25,7 @@ public class SimulationScreen implements Screen {
     private final RobotCar robotCar;
 
     private RobotController activeController;
-    private final temp1 temp1;
+    private final AutonomousNavigator autonomousNavigator;
     private final ManualController manualController;
 
     public SimulationScreen() {
@@ -34,16 +34,13 @@ public class SimulationScreen implements Screen {
         sideCamera = new SideCamera();
 
         worldMap = new WorldMap();
-        // Start the car so the MID line sensor sits directly over the first vertical line at x=1.0.
-        // With initial angle 90° and LINE_SENSOR_FORWARD_OFFSET = 0.15, the mid sensor world X is x - 0.15.
-        // Therefore, place the car at x = 1.15 so the mid sensor is at x = 1.0.
-        robotCar = new RobotCar(1.15f, 1.5f);
+        robotCar = new RobotCar(1.0f, 1.5f);
 
         ObstacleAvoidanceSystem obstacleAvoidanceSystem = new ObstacleAvoidanceSystem(worldMap);
-        temp1 = new temp1();
+        autonomousNavigator = new AutonomousNavigator();
         manualController = new ManualController();
         manualController.setAvoidanceSystem(obstacleAvoidanceSystem);
-        activeController = temp1; // Start in autonomous mode
+        activeController = autonomousNavigator; // Start in autonomous mode
     }
 
     @Override
@@ -70,7 +67,7 @@ public class SimulationScreen implements Screen {
 
     private void handleInput() {
         if (Gdx.input.isKeyJustPressed(Config.KEY_MODE_AUTO)) {
-            activeController = temp1;
+            activeController = autonomousNavigator;
         }
         if (Gdx.input.isKeyJustPressed(Config.KEY_MODE_MANUAL)) {
             activeController = manualController;

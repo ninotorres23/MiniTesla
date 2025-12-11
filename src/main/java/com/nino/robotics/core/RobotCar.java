@@ -95,11 +95,4 @@ public class RobotCar {
     public LineSensor getMidLineSensor() { return midLineSensor; }
     public LineSensor getRightLineSensor() { return rightLineSensor; }
     public UltrasonicSensor getUltrasonicSensor() { return ultrasonicSensor; }
-
-    // Setter to allow controllers to adjust heading (e.g., snap turns at corners)
-    public void setAngle(float angle) {
-        float a = angle % 360f;
-        if (a < 0) a += 360f;
-        this.angle = a;
-    }
 }

@@ -4,44 +4,109 @@ import com.nino.robotics.core.RobotCar;
 import com.nino.robotics.core.RobotController;
 import com.nino.robotics.util.Config;
 
+/**
+ * Autonomous line-following controller for the robot car.
+ * <p>
+ * This controller implements an IR-style line following algorithm using three line sensors
+ * (left, middle, right) mounted across the front of the robot. It uses a hybrid approach:
+ * <ul>
+ *   <li><b>PD Control</b>: For smooth steering along straight segments</li>
+ *   <li><b>Heading Snap</b>: For 90-degree corner turns</li>
+ * </ul>
+ * </p>
+ * 
+ * <h2>Algorithm Overview</h2>
+ * <ol>
+ *   <li><b>Corner Detection</b>: When only a side sensor detects the line (mid sensor off),
+ *       a corner is detected. After confirmation time, the robot snaps its heading ±90°.</li>
+ *   <li><b>Corner Reacquisition</b>: After snapping, the robot drives forward until any
+ *       sensor reacquires the line.</li>
+ *   <li><b>PD Steering</b>: During normal operation, a dual-zone PD controller provides
+ *       smooth corrections. Fine control when centered, coarse control when drifting.</li>
+ *   <li><b>End Detection</b>: When all sensors lose the line for a sustained period,
+ *       the robot stops (end of track).</li>
+ * </ol>
+ * 
+ * @author Nino Torres
+ * @version 1.0
+ * @see RobotController
+ * @see RobotCar
+ */
 public class AutonomousNavigator implements RobotController {
 
+    /**
+     * Internal state machine for the autonomous navigator.
+     */
     private enum State {
+        /** Normal line following mode using PD control */
         LINE_FOLLOWING,
+        /** Obstacle detected - currently stops (reserved for future enhancement) */
         OBSTACLE_AVOIDANCE
     }
 
     private State currentState = State.LINE_FOLLOWING;
     
-    // PD Controller Configuration
+    // ==================== PD Controller Configuration ====================
+    /** Base forward speed in meters per second */
     private static final float BASE_SPEED = 0.3f;
-    private static final float KP = 0.6f;  // Reduced gain for smoother control
-    private static final float KD = 0.6f;  // Keep high damping
-    private static final float LINE_THRESHOLD = 0.3f;  // Sensor detection threshold
+    /** Proportional gain for steering correction (lower = smoother) */
+    private static final float KP = 0.6f;
+    /** Derivative gain for damping oscillations */
+    private static final float KD = 0.6f;
+    /** Minimum sensor value to consider "on the line" */
+    private static final float LINE_THRESHOLD = 0.3f;
     
-    // Corner detection
-    private static final float CORNER_DETECT_TIME = 0.08f;  // Time (seconds) to confirm corner
-    private static final float POST_CORNER_HOLD_TIME = 0.5f; // Reduced hold time to resume control faster
-    private static final float CORNER_FORWARD_SPEED = 0.3f; // Full speed during reacquisition to prevent stalling
-    private static final float CORNER_REACQUIRE_TIMEOUT = 2.0f; // Max time to reacquire before giving up
-    private static final float END_OF_LINE_TIME = 0.3f; // Time with no line before stopping (end of track)
+    // ==================== Corner Detection Configuration ====================
+    /** Time in seconds a corner pattern must persist before triggering a turn */
+    private static final float CORNER_DETECT_TIME = 0.08f;
+    /** Time to hold straight after completing a corner turn */
+    private static final float POST_CORNER_HOLD_TIME = 0.5f;
+    /** Speed during corner reacquisition phase */
+    private static final float CORNER_FORWARD_SPEED = 0.3f;
+    /** Maximum time to search for line after a corner before giving up */
+    private static final float CORNER_REACQUIRE_TIMEOUT = 2.0f;
+    /** Time with no line detected before stopping (end of track) */
+    private static final float END_OF_LINE_TIME = 0.3f;
     
+    // ==================== State Variables ====================
     private float lastError = 0;
-    private float noLineTimer = 0;  // Time with no line detected
-    private boolean reachedEnd = false;  // True when robot has stopped at end of line
-    private float cornerDetectTimer = 0;      // Accumulates time when corner pattern detected
-    private int cornerDetectSide = 0;         // Which side triggered: -1=left, +1=right, 0=none
-    private float postCornerHoldTimer = 0;    // Time remaining to hold straight after corner
-    private boolean inCornerReacquire = false; // True when snapped and driving forward to reacquire
-    private int cornerDirection = 0;          // -1 = left turn, +1 = right turn, 0 = none
-    private float cornerReacquireTimer = 0;   // Time spent trying to reacquire
+    private float noLineTimer = 0;
+    private boolean reachedEnd = false;
+    private float cornerDetectTimer = 0;
+    private int cornerDetectSide = 0;
+    private float postCornerHoldTimer = 0;
+    private boolean inCornerReacquire = false;
+    private int cornerDirection = 0;
+    private float cornerReacquireTimer = 0;
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * In autonomous mode, this method delegates entirely to the line-following algorithm.
+     * Ultrasonic obstacle detection is disabled in this mode.
+     * </p>
+     */
     @Override
     public void updateControl(RobotCar car, float delta) {
-        // Ultrasonic disabled in autonomous mode - only line following
         followLine(car, delta);
     }
 
+    /**
+     * Main line-following algorithm.
+     * <p>
+     * Implements a state machine that handles:
+     * <ul>
+     *   <li>End-of-line detection and stopping</li>
+     *   <li>Corner reacquisition after a 90° snap turn</li>
+     *   <li>Post-corner stabilization hold</li>
+     *   <li>Corner detection and heading snap</li>
+     *   <li>Normal PD-based steering</li>
+     * </ul>
+     * </p>
+     * 
+     * @param car   The robot car to control
+     * @param delta Time elapsed since last update (seconds)
+     */
     private void followLine(RobotCar car, float delta) {
         // Read sensor values (0-1, where 1 means on the line)
         float left = car.getLeftLineSensor().readValue();

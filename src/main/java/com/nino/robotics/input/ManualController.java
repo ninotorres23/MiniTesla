@@ -6,22 +6,66 @@ import com.nino.robotics.core.RobotCar;
 import com.nino.robotics.core.RobotController;
 import com.nino.robotics.util.Config;
 
+/**
+ * Keyboard-based manual controller for the robot car.
+ * <p>
+ * This controller allows the user to drive the robot using keyboard input:
+ * <ul>
+ *   <li><b>W</b> - Drive forward</li>
+ *   <li><b>S</b> - Drive backward</li>
+ *   <li><b>A</b> - Turn left</li>
+ *   <li><b>D</b> - Turn right</li>
+ * </ul>
+ * </p>
+ * 
+ * <h2>Ultrasonic Safety System</h2>
+ * <p>
+ * The controller includes an automatic collision avoidance system using the
+ * ultrasonic sensor. When an obstacle is detected within the stop distance:
+ * <ol>
+ *   <li>The robot automatically stops</li>
+ *   <li>Reverses for a short duration (bounce-back)</li>
+ *   <li>Blocks forward movement until the obstacle is cleared</li>
+ * </ol>
+ * </p>
+ * 
+ * @author Nino Torres
+ * @version 1.0
+ * @see RobotController
+ * @see Config#ULTRASONIC_STOP_DISTANCE
+ */
 public class ManualController implements RobotController {
 
     private ObstacleAvoidanceSystem avoidanceSystem;
     
-    // Ultrasonic obstacle detection state
-    private boolean inRecovery = false;   // True when actively reversing away from obstacle
+    // ==================== Ultrasonic Recovery State ====================
+    /** True when actively reversing away from an obstacle */
+    private boolean inRecovery = false;
+    /** Time remaining in reverse maneuver */
     private float reverseTimer = 0;
     
-    // Constants for bounce-back behavior
-    private static final float REVERSE_DURATION = 0.6f;     // Increased reverse time
-    private static final float REVERSE_SPEED = 0.5f;        // Increased reverse speed
-    private static final float RECOVERY_THRESHOLD = 0.35f;  // Must back up to this distance to clear flag (hysteresis)
+    // ==================== Recovery Configuration ====================
+    /** Duration of automatic reverse maneuver (seconds) */
+    private static final float REVERSE_DURATION = 0.6f;
+    /** Speed during reverse maneuver (0.0 to 1.0) */
+    private static final float REVERSE_SPEED = 0.5f;
+    /** Distance required to clear recovery state (hysteresis) */
+    private static final float RECOVERY_THRESHOLD = 0.35f;
 
-    // The avoidance system will be injected later.
+    /**
+     * Creates a new manual controller.
+     * <p>
+     * The obstacle avoidance system can be injected later via
+     * {@link #setAvoidanceSystem(ObstacleAvoidanceSystem)}.
+     * </p>
+     */
     public ManualController() {}
 
+    /**
+     * Sets the obstacle avoidance system for additional safety checks.
+     * 
+     * @param avoidanceSystem The avoidance system to use
+     */
     public void setAvoidanceSystem(ObstacleAvoidanceSystem avoidanceSystem) {
         this.avoidanceSystem = avoidanceSystem;
     }

@@ -6,26 +6,59 @@ import com.nino.robotics.util.Config;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Represents a path made of connected line segments for the robot to follow.
+ * <p>
+ * The path is defined by a series of waypoints. Line segments connect consecutive
+ * waypoints. The {@link #isOnLine(float, float)} method checks if a point is within
+ * {@link Config#LINE_THICKNESS} of any segment.
+ * </p>
+ * 
+ * @author Nino Torres
+ * @version 1.0
+ * @see WorldMap
+ * @see Config#LINE_THICKNESS
+ */
 public class LinePath {
+    /** Ordered list of waypoints defining the path */
     private final List<Vector2> points;
 
+    /**
+     * Creates an empty line path.
+     */
     public LinePath() {
         this.points = new ArrayList<>();
     }
 
+    /**
+     * Adds a waypoint to the end of the path.
+     * 
+     * @param x X coordinate of the waypoint (meters)
+     * @param y Y coordinate of the waypoint (meters)
+     */
     public void addPoint(float x, float y) {
         points.add(new Vector2(x, y));
     }
 
+    /**
+     * Gets all waypoints in the path.
+     * 
+     * @return List of waypoint positions
+     */
     public List<Vector2> getPoints() {
         return points;
     }
 
     /**
      * Checks if a given world coordinate is on the line path.
-     * @param x The x-coordinate.
-     * @param y The y-coordinate.
-     * @return True if the point is on the line, false otherwise.
+     * <p>
+     * A point is considered "on the line" if it is within half the line thickness
+     * of any segment in the path.
+     * </p>
+     * 
+     * @param x The x-coordinate to check
+     * @param y The y-coordinate to check
+     * @return true if the point is on the line, false otherwise
      */
     public boolean isOnLine(float x, float y) {
         if (points.size() < 2) {
@@ -46,7 +79,14 @@ public class LinePath {
         return false;
     }
 
-    // Helper method to calculate the distance from a point to a line segment.
+    /**
+     * Calculates the shortest distance from a point to a line segment.
+     * 
+     * @param p The point to measure from
+     * @param v Start of the line segment
+     * @param w End of the line segment
+     * @return The shortest distance from point p to segment vw
+     */
     private float distToSegment(Vector2 p, Vector2 v, Vector2 w) {
         float l2 = v.dst2(w);
         if (l2 == 0.0) return p.dst(v);

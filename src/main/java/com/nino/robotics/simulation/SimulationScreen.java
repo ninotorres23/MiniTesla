@@ -15,6 +15,36 @@ import com.nino.robotics.core.Sensor;
 import com.nino.robotics.input.ManualController;
 import com.nino.robotics.util.Config;
 
+/**
+ * Main simulation screen that renders and updates the robot simulation.
+ * <p>
+ * This screen provides two views:
+ * <ul>
+ *   <li><b>Top-Down View</b>: Shows the robot, line path, and obstacles from above</li>
+ *   <li><b>Side View</b>: Shows a simplified side profile of the robot and obstacles</li>
+ * </ul>
+ * </p>
+ * 
+ * <h2>Control Modes</h2>
+ * <ul>
+ *   <li><b>Autonomous (Press 1)</b>: Robot follows the line automatically</li>
+ *   <li><b>Manual (Press 2)</b>: User controls robot with WASD keys</li>
+ * </ul>
+ * 
+ * <h2>Visualization</h2>
+ * <ul>
+ *   <li>Robot is rendered as a blue rectangle</li>
+ *   <li>Sensors are shown as yellow circles</li>
+ *   <li>Ultrasonic cone is shown in manual mode (transparent cyan)</li>
+ *   <li>Line path is black, obstacles are red</li>
+ * </ul>
+ * 
+ * @author Nino Torres
+ * @version 1.0
+ * @see RobotCar
+ * @see AutonomousNavigator
+ * @see ManualController
+ */
 public class SimulationScreen implements Screen {
 
     private final ShapeRenderer shapeRenderer;
@@ -24,6 +54,7 @@ public class SimulationScreen implements Screen {
     private final WorldMap worldMap;
     private final RobotCar robotCar;
 
+    /** Currently active controller (autonomous or manual) */
     private RobotController activeController;
     private final AutonomousNavigator autonomousNavigator;
     private final ManualController manualController;

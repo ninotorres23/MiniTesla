@@ -5,30 +5,61 @@ import com.nino.robotics.core.RobotCar;
 import com.nino.robotics.simulation.WorldMap;
 import com.nino.robotics.util.Config;
 
+/**
+ * Provides obstacle detection and collision prediction for the robot.
+ * <p>
+ * This system uses the ultrasonic sensor and world map to determine if
+ * the robot is about to collide with an obstacle. It can be used by
+ * controllers to implement safety behaviors.
+ * </p>
+ * 
+ * <h2>Detection Methods</h2>
+ * <ul>
+ *   <li>{@link #isCollisionImminent(RobotCar)} - Uses ultrasonic sensor</li>
+ *   <li>{@link #isMoveSafe(RobotCar, float, float, float)} - Simulates future position</li>
+ * </ul>
+ * 
+ * @author Nino Torres
+ * @version 1.0
+ * @see com.nino.robotics.core.UltrasonicSensor
+ * @see WorldMap
+ */
 public class ObstacleAvoidanceSystem {
 
+    /** Reference to the world map for collision checking */
     private final WorldMap worldMap;
 
+    /**
+     * Creates an obstacle avoidance system for the given world.
+     * 
+     * @param worldMap The world map containing obstacles
+     */
     public ObstacleAvoidanceSystem(WorldMap worldMap) {
         this.worldMap = worldMap;
     }
 
     /**
-     * Checks if moving forward would result in a collision.
-     * @param car The robot car.
-     * @return True if a collision is imminent, false otherwise.
+     * Checks if an obstacle is within the stop distance using the ultrasonic sensor.
+     * 
+     * @param car The robot car to check
+     * @return true if an obstacle is within {@link Config#ULTRASONIC_STOP_DISTANCE}
      */
     public boolean isCollisionImminent(RobotCar car) {
         return car.getUltrasonicSensor().readValue() < Config.ULTRASONIC_STOP_DISTANCE;
     }
 
     /**
-     * Checks if a proposed movement is safe.
-     * @param car The robot car.
-     * @param proposedLeftSpeed The proposed left motor speed.
-     * @param proposedRightSpeed The proposed right motor speed.
-     * @param delta The time step for the simulation.
-     * @return True if the move is safe, false otherwise.
+     * Simulates a movement and checks if it would result in a collision.
+     * <p>
+     * This method predicts the robot's future position based on the proposed
+     * motor speeds and checks if that position would overlap with any obstacle.
+     * </p>
+     * 
+     * @param car                The robot car
+     * @param proposedLeftSpeed  Proposed left motor speed (-1.0 to 1.0)
+     * @param proposedRightSpeed Proposed right motor speed (-1.0 to 1.0)
+     * @param delta              Time step for the simulation (seconds)
+     * @return true if the move is safe (no collision), false otherwise
      */
     public boolean isMoveSafe(RobotCar car, float proposedLeftSpeed, float proposedRightSpeed, float delta) {
         // Simulate one step ahead
